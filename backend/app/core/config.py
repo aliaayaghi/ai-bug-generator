@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = str(PROJECT_ROOT / "uploads")
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
 
+    # AI settings
+    OPENAI_API_KEY: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

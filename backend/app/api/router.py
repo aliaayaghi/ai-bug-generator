@@ -1,7 +1,7 @@
 """Main API router that combines all route modules."""
 from fastapi import APIRouter
 
-from app.api.routes import health, reports, uploads
+from app.api.routes import analysis, health, reports, uploads
 
 api_router = APIRouter()
 
@@ -9,3 +9,4 @@ api_router = APIRouter()
 api_router.include_router(health.router, tags=["health"])
 api_router.include_router(reports.router)
 api_router.include_router(uploads.router, tags=["uploads"])
+api_router.include_router(analysis.router, tags=["analysis"])
