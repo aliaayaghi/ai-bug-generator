@@ -242,6 +242,24 @@ body {
   font-weight: 500;
 }
 
+.analyzing-text {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.ai-filled-text {
+  font-size: 13px;
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.analysis-error-text {
+  font-size: 13px;
+  color: #d97706;
+  font-weight: 500;
+}
+
 .upload-button-small {
   background-color: var(--accent);
   color: white;

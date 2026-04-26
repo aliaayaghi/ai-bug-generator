@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchReports, createReport, deleteReport, uploadFile } from '../shared/api/client';
+import { fetchReports, createReport, deleteReport, uploadFile, analyzeImage } from '../shared/api/client';
 
 function HomePage() {
   const [reports, setReports] = useState([]);
@@ -12,6 +12,11 @@ function HomePage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+
+  // AI analysis state
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiFilled, setAiFilled] = useState(false);
+  const [analysisError, setAnalysisError] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -54,18 +59,43 @@ function HomePage() {
     if (file) {
       setSelectedFile(file);
       setUploadResult(null);
+      setAiFilled(false);
+      setAnalysisError(null);
       setUploading(true);
       // Auto-upload immediately when file is selected
       uploadFile(file)
         .then((result) => {
           setUploadResult(result);
           setFormData((prev) => ({ ...prev, image_path: result.file_path }));
+          
+          // After upload succeeds, automatically analyze with AI
+          setAnalyzing(true);
+          return analyzeImage(
+            result.file_path,
+            formData.user_note,
+            formData.page_url
+          );
+        })
+        .then((analysis) => {
+          // Auto-fill form fields with AI analysis
+          setFormData((prev) => ({
+            ...prev,
+            title: analysis.title || prev.title,
+            summary: analysis.summary || prev.summary,
+            severity: analysis.severity || prev.severity,
+            reproduction_steps: analysis.reproduction_steps || prev.reproduction_steps,
+            expected_behavior: analysis.expected_behavior || prev.expected_behavior,
+            actual_behavior: analysis.actual_behavior || prev.actual_behavior,
+          }));
+          setAiFilled(true);
         })
         .catch((err) => {
-          setError(err.message);
+          // Upload succeeded but analysis failed - show error but don't block
+          setAnalysisError(err.message);
         })
         .finally(() => {
           setUploading(false);
+          setAnalyzing(false);
         });
     }
   }
@@ -88,6 +118,8 @@ function HomePage() {
         reproduction_steps: '',
       });
       setShowForm(false);
+      setAiFilled(false);
+      setAnalysisError(null);
       await loadReports();
     } catch (err) {
       setError(err.message);
@@ -226,8 +258,15 @@ function HomePage() {
                   <div className="selected-file">
                     <span className="file-name">{selectedFile.name}</span>
                     {uploading && <span className="uploading-text">Uploading...</span>}
-                    {uploadResult && (
+                    {uploadResult && !analyzing && (
                       <span className="upload-success">✓ Uploaded</span>
+                    )}
+                    {analyzing && <span className="analyzing-text">Analyzing with AI...</span>}
+                    {aiFilled && !analyzing && (
+                      <span className="ai-filled-text">✓ Form auto-filled by AI</span>
+                    )}
+                    {analysisError && !analyzing && (
+                      <span className="analysis-error-text">⚠ AI analysis failed: {analysisError}</span>
                     )}
                   </div>
                 )}

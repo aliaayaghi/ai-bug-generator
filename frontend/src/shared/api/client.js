@@ -75,4 +75,32 @@ export async function deleteReport(reportId) {
   }
 }
 
+/**
+ * Analyze a screenshot using AI to generate bug report fields.
+ * @param {string} imagePath - Path to the uploaded image file
+ * @param {string} [userNote] - Optional user note about the screenshot
+ * @param {string} [pageUrl] - Optional URL where the screenshot was taken
+ * @returns {Promise<Object>} Object with suggested bug report fields
+ */
+export async function analyzeImage(imagePath, userNote = '', pageUrl = '') {
+  const response = await fetch(`${API_BASE}/analyze`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      image_path: imagePath,
+      user_note: userNote || null,
+      page_url: pageUrl || null,
+    }),
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to analyze image');
+  }
+  
+  return response.json();
+}
+
 

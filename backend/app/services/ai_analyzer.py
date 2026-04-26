@@ -1,15 +1,14 @@
 """AI-powered screenshot analysis service.
 
-This module provides the AIAnalyzer class which uses OpenAI's Vision API
-to analyze screenshots and generate structured bug report suggestions.
+This module provides the AIAnalyzer class which uses OpenRouter's API
+(OpenAI-compatible) to analyze screenshots and generate structured bug report suggestions.
 """
 import base64
 import json
 from pathlib import Path
 from typing import Optional
 
-import openai
-from openai import OpenAI
+from openai import OpenAI, APIError
 
 from app.core.config import get_settings
 from app.schemas.analysis_response import AnalysisResponse
@@ -18,8 +17,8 @@ from app.schemas.analysis_response import AnalysisResponse
 class AIAnalyzer:
     """Service for analyzing screenshots using AI vision.
     
-    This class handles communication with the OpenAI API to analyze
-    uploaded images and generate structured bug report suggestions.
+    This class handles communication with the OpenRouter API (OpenAI-compatible)
+    to analyze uploaded images and generate structured bug report suggestions.
     """
     
     # Default prompt for bug report analysis
@@ -42,15 +41,18 @@ Respond ONLY with valid JSON, no other text."""
     
     @property
     def client(self) -> OpenAI:
-        """Lazy initialization of OpenAI client."""
+        """Lazy initialization of OpenRouter client (OpenAI-compatible)."""
         if self._client is None:
-            api_key = self._settings.OPENAI_API_KEY
+            api_key = self._settings.OPENROUTER_API_KEY
             if not api_key:
                 raise ValueError(
-                    "OpenAI API key not configured. "
-                    "Set OPENAI_API_KEY environment variable."
+                    "OpenRouter API key not configured. "
+                    "Set OPENROUTER_API_KEY environment variable."
                 )
-            self._client = OpenAI(api_key=api_key)
+            self._client = OpenAI(
+                api_key=api_key,
+                base_url=self._settings.OPENROUTER_BASE_URL,
+            )
         return self._client
     
     def _resolve_image_path(self, image_path: str) -> Path:
@@ -184,7 +186,7 @@ Respond ONLY with valid JSON, no other text."""
         # Call OpenAI API using Chat Completions with base64 image
         try:
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",
+                model=self._settings.OPENROUTER_MODEL,
                 messages=[
                     {
                         "role": "system",
@@ -209,10 +211,10 @@ Respond ONLY with valid JSON, no other text."""
                 max_tokens=1000,
                 temperature=0.3,
             )
-        except openai.APIError as e:
-            raise Exception(f"OpenAI API error: {e}")
+        except APIError as e:
+          raise Exception(f"AI API error: {e}")
         except Exception as e:
-            raise Exception(f"Failed to analyze image: {e}")
+          raise Exception(f"Failed to analyze image: {e}")
         
         # Parse the response
         content = response.choices[0].message.content
