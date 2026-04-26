@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchReports, createReport, deleteReport } from '../shared/api/client';
+import { fetchReports, createReport, deleteReport, uploadFile } from '../shared/api/client';
 
 function HomePage() {
   const [reports, setReports] = useState([]);
@@ -7,6 +7,11 @@ function HomePage() {
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // File upload state
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -42,6 +47,27 @@ function HomePage() {
   function handleInputChange(e) {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  }
+
+  function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setUploadResult(null);
+      setUploading(true);
+      // Auto-upload immediately when file is selected
+      uploadFile(file)
+        .then((result) => {
+          setUploadResult(result);
+          setFormData((prev) => ({ ...prev, image_path: result.file_path }));
+        })
+        .catch((err) => {
+          setError(err.message);
+        })
+        .finally(() => {
+          setUploading(false);
+        });
+    }
   }
 
   async function handleSubmit(e) {
@@ -187,15 +213,25 @@ function HomePage() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="image_path">Image Path</label>
-              <input
-                type="text"
-                id="image_path"
-                name="image_path"
-                value={formData.image_path}
-                onChange={handleInputChange}
-                placeholder="Path or URL to screenshot"
-              />
+              <label htmlFor="screenshot">Screenshot</label>
+              <div className="file-upload-container">
+                <input
+                  type="file"
+                  id="screenshot"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  className="file-input"
+                />
+                {selectedFile && (
+                  <div className="selected-file">
+                    <span className="file-name">{selectedFile.name}</span>
+                    {uploading && <span className="uploading-text">Uploading...</span>}
+                    {uploadResult && (
+                      <span className="upload-success">✓ Uploaded</span>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="form-group">

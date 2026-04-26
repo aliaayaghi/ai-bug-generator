@@ -1,9 +1,15 @@
 """Application configuration settings."""
+import os
 from functools import lru_cache
+from pathlib import Path
 from typing import Optional
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+# Get the project root (parent of backend directory)
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 class Settings(BaseSettings):
@@ -22,6 +28,10 @@ class Settings(BaseSettings):
 
     # Database settings
     DATABASE_URL: str = "sqlite:///./bug_report.db"
+
+    # Upload settings - use absolute path from project root
+    UPLOAD_DIR: str = str(PROJECT_ROOT / "uploads")
+    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
 
 
 @lru_cache

@@ -6,6 +6,28 @@
 const API_BASE = '/api';
 
 /**
+ * Upload an image file to the backend.
+ * @param {File} file - The image file to upload
+ * @returns {Promise<Object>} Object with file_path, original_filename, content_type
+ */
+export async function uploadFile(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${API_BASE}/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.detail || 'Failed to upload file');
+  }
+  
+  return response.json();
+}
+
+/**
  * Fetch all reports from the backend.
  * @returns {Promise<Array>} Array of report objects
  */
