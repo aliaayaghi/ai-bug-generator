@@ -77,6 +77,80 @@ body {
   background-color: rgba(126, 147, 168, 0.04);
 }
 
+.upload-area.has-file {
+  border-style: solid;
+  border-color: var(--accent);
+  background-color: rgba(126, 147, 168, 0.04);
+  padding: 24px;
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.file-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-status .file-name {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.form-description {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancel-button {
+  flex: 1;
+  background-color: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.cancel-button:hover {
+  border-color: var(--text-secondary);
+  color: var(--text-primary);
+}
+
+.secondary-button {
+  flex: 1;
+  background-color: transparent;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 12px 20px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.secondary-button:hover {
+  background-color: var(--accent);
+  color: white;
+}
+
 .upload-icon {
   width: 48px;
   height: 48px;
@@ -419,4 +493,53 @@ body {
   color: var(--text-secondary);
   text-align: center;
   padding: 20px;
+}
+
+/* Preview card styles */
+.preview-card {
+  background-color: white;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.preview-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.preview-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.preview-section {
+  margin-bottom: 14px;
+}
+
+.preview-section:last-child {
+  margin-bottom: 0;
+}
+
+.preview-section label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.preview-section p {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
 }

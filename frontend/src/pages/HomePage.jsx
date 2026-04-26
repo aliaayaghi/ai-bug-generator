@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchReports, createReport, deleteReport, uploadFile, analyzeImage } from '../shared/api/client';
 
 function HomePage() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // File upload state
+  // File upload state - starts with upload as main action
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
@@ -18,7 +17,13 @@ function HomePage() {
   const [aiFilled, setAiFilled] = useState(false);
   const [analysisError, setAnalysisError] = useState(null);
 
-  // Form state
+  // Form state - shown after upload/analysis starts
+  const [showForm, setShowForm] = useState(false);
+  
+  // Preview mode - shows read-only AI-generated report first
+  const [showPreview, setShowPreview] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  
   const [formData, setFormData] = useState({
     title: '',
     summary: '',
@@ -30,6 +35,9 @@ function HomePage() {
     page_url: '',
     reproduction_steps: '',
   });
+
+  // Ref for file input
+  const fileInputRef = useRef(null);
 
   // Load reports on mount
   useEffect(() => {
@@ -61,8 +69,12 @@ function HomePage() {
       setUploadResult(null);
       setAiFilled(false);
       setAnalysisError(null);
+      setShowForm(true);
+      setShowPreview(false);
+      setIsEditing(false);
       setUploading(true);
-      // Auto-upload immediately when file is selected
+
+      // Upload and analyze immediately
       uploadFile(file)
         .then((result) => {
           setUploadResult(result);
@@ -88,10 +100,14 @@ function HomePage() {
             actual_behavior: analysis.actual_behavior || prev.actual_behavior,
           }));
           setAiFilled(true);
+          // Show preview mode after AI analysis completes
+          setShowPreview(true);
         })
         .catch((err) => {
           // Upload succeeded but analysis failed - show error but don't block
           setAnalysisError(err.message);
+          // Still show form even if analysis failed
+          setShowForm(true);
         })
         .finally(() => {
           setUploading(false);
@@ -100,26 +116,46 @@ function HomePage() {
     }
   }
 
+  // Handle click on upload area to trigger file input
+  function handleUploadAreaClick() {
+    fileInputRef.current?.click();
+  }
+
+  // Reset to start over with new upload
+  function handleStartOver() {
+    setSelectedFile(null);
+    setUploadResult(null);
+    setAiFilled(false);
+    setAnalysisError(null);
+    setShowForm(false);
+    setShowPreview(false);
+    setIsEditing(false);
+    setFormData({
+      title: '',
+      summary: '',
+      severity: 'medium',
+      expected_behavior: '',
+      actual_behavior: '',
+      image_path: '',
+      user_note: '',
+      page_url: '',
+      reproduction_steps: '',
+    });
+  }
+
+  // Switch to edit mode
+  function handleEdit() {
+    setIsEditing(true);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
     try {
       setSubmitting(true);
       setError(null);
       await createReport(formData);
-      setFormData({
-        title: '',
-        summary: '',
-        severity: 'medium',
-        expected_behavior: '',
-        actual_behavior: '',
-        image_path: '',
-        user_note: '',
-        page_url: '',
-        reproduction_steps: '',
-      });
-      setShowForm(false);
-      setAiFilled(false);
-      setAnalysisError(null);
+      // Reset to initial state after successful save
+      handleStartOver();
       await loadReports();
     } catch (err) {
       setError(err.message);
@@ -143,25 +179,129 @@ function HomePage() {
 
   return (
     <div className="app-container">
+      {/* Header Card - Always visible */}
       <div className="card">
         <h1 className="title">Bug Report AI</h1>
         <p className="description">
           Upload a screenshot and let AI generate a detailed bug report for you.
         </p>
 
-        <button
-          className="upload-button"
-          onClick={() => setShowForm(!showForm)}
+        {/* Upload Area - Main action on homepage */}
+        <div 
+          className={`upload-area ${selectedFile ? 'has-file' : ''}`}
+          onClick={handleUploadAreaClick}
         >
-          {showForm ? 'Cancel' : 'Create Report'}
-        </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept="image/*"
+            onChange={handleFileSelect}
+            className="file-input-hidden"
+          />
+          
+          {!selectedFile ? (
+            // No file selected - show upload prompt
+            <>
+              <div className="upload-icon">📷</div>
+              <p className="upload-text">Click to upload a screenshot</p>
+              <p className="upload-hint">PNG, JPG, or GIF</p>
+            </>
+          ) : (
+            // File selected - show status
+            <div className="file-status">
+              <span className="file-name">{selectedFile.name}</span>
+              {uploading && <span className="uploading-text">Uploading...</span>}
+              {uploadResult && !analyzing && (
+                <span className="upload-success">✓ Uploaded</span>
+              )}
+              {analyzing && <span className="analyzing-text">Analyzing with AI...</span>}
+              {aiFilled && !analyzing && (
+                <span className="ai-filled-text">✓ Report generated</span>
+              )}
+              {analysisError && !analyzing && (
+                <span className="analysis-error-text">⚠ {analysisError}</span>
+              )}
+            </div>
+          )}
+        </div>
 
         {error && <div className="error-message">{error}</div>}
       </div>
 
-      {showForm && (
+      {/* AI Preview Card - Read-only report preview */}
+      {showPreview && !isEditing && (
         <div className="card">
-          <h2 className="section-title">New Bug Report</h2>
+          <h2 className="section-title">Generated Report Preview</h2>
+          <p className="form-description">
+            Review the AI-generated report below. You can save it as-is or edit it first.
+          </p>
+          
+          <div className="preview-card">
+            <div className="preview-header">
+              <span className={`severity-badge severity-${formData.severity}`}>
+                {formData.severity}
+              </span>
+              <h3 className="preview-title">{formData.title || 'Untitled Report'}</h3>
+            </div>
+            
+            <div className="preview-section">
+              <label>Summary</label>
+              <p>{formData.summary || 'No summary provided'}</p>
+            </div>
+            
+            <div className="preview-section">
+              <label>Expected Behavior</label>
+              <p>{formData.expected_behavior || 'Not specified'}</p>
+            </div>
+            
+            <div className="preview-section">
+              <label>Actual Behavior</label>
+              <p>{formData.actual_behavior || 'Not specified'}</p>
+            </div>
+            
+            {formData.reproduction_steps && (
+              <div className="preview-section">
+                <label>Reproduction Steps</label>
+                <p>{formData.reproduction_steps}</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="form-actions">
+            <button
+              type="button"
+              className="cancel-button"
+              onClick={handleStartOver}
+            >
+              Start Over
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handleEdit}
+            >
+              Edit
+            </button>
+            <button
+              type="button"
+              className="submit-button"
+              onClick={handleSubmit}
+              disabled={submitting}
+            >
+              {submitting ? 'Saving...' : 'Save Report'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Report Form - Shown when editing */}
+      {showForm && isEditing && (
+        <div className="card">
+          <h2 className="section-title">Edit Report</h2>
+          <p className="form-description">
+            Modify the fields below as needed, then save your report.
+          </p>
+          
           <form onSubmit={handleSubmit} className="report-form">
             <div className="form-group">
               <label htmlFor="title">Title *</label>
@@ -245,35 +385,6 @@ function HomePage() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="screenshot">Screenshot</label>
-              <div className="file-upload-container">
-                <input
-                  type="file"
-                  id="screenshot"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="file-input"
-                />
-                {selectedFile && (
-                  <div className="selected-file">
-                    <span className="file-name">{selectedFile.name}</span>
-                    {uploading && <span className="uploading-text">Uploading...</span>}
-                    {uploadResult && !analyzing && (
-                      <span className="upload-success">✓ Uploaded</span>
-                    )}
-                    {analyzing && <span className="analyzing-text">Analyzing with AI...</span>}
-                    {aiFilled && !analyzing && (
-                      <span className="ai-filled-text">✓ Form auto-filled by AI</span>
-                    )}
-                    {analysisError && !analyzing && (
-                      <span className="analysis-error-text">⚠ AI analysis failed: {analysisError}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="form-group">
               <label htmlFor="page_url">Page URL</label>
               <input
                 type="text"
@@ -297,24 +408,34 @@ function HomePage() {
               />
             </div>
 
-            <button
-              type="submit"
-              className="submit-button"
-              disabled={submitting}
-            >
-              {submitting ? 'Creating...' : 'Submit Report'}
-            </button>
+            <div className="form-actions">
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={() => setIsEditing(false)}
+              >
+                Back to Preview
+              </button>
+              <button
+                type="submit"
+                className="submit-button"
+                disabled={submitting}
+              >
+                {submitting ? 'Saving...' : 'Save Report'}
+              </button>
+            </div>
           </form>
         </div>
       )}
 
+      {/* Saved Reports List */}
       <div className="card">
-        <h2 className="section-title">Bug Reports ({reports.length})</h2>
+        <h2 className="section-title">Saved Reports ({reports.length})</h2>
 
         {loading ? (
           <p className="loading-text">Loading reports...</p>
         ) : reports.length === 0 ? (
-          <p className="empty-text">No reports yet. Create one above!</p>
+          <p className="empty-text">No reports yet. Upload a screenshot to get started!</p>
         ) : (
           <div className="reports-list">
             {reports.map((report) => (

@@ -124,18 +124,29 @@ Respond ONLY with valid JSON, no other text."""
         user_note: Optional[str] = None,
         page_url: Optional[str] = None
     ) -> str:
-        """Build the user message with context."""
-        parts = []
+        """Build the user message with analysis instruction and context."""
+        # Include analysis instruction in user message to avoid provider errors
+        instruction = """Analyze this screenshot and provide a structured bug report in JSON format with these exact fields:
+- title: A short descriptive title for the bug (max 100 chars)
+- summary: A brief summary of what you observe (max 200 chars)
+- severity: One of: low, medium, high, critical
+- reproduction_steps: Steps to reproduce as a numbered list (if observable)
+- expected_behavior: What should have happened
+- actual_behavior: What you observe in the screenshot
+- suspected_area: The UI area/component where the issue appears
+- confidence: Integer 0-100 indicating how confident you are in this analysis
+
+Respond ONLY with valid JSON, no other text."""
+        
+        parts = [instruction]
         
         if user_note:
-            parts.append(f"User note: {user_note}")
+            parts.append(f"\nUser note: {user_note}")
         
         if page_url:
             parts.append(f"Page URL: {page_url}")
         
-        if parts:
-            return "\n".join(parts)
-        return "Analyze this screenshot for any UI issues or bugs."
+        return "\n".join(parts)
     
     def analyze(
         self,
@@ -188,10 +199,6 @@ Respond ONLY with valid JSON, no other text."""
             response = self.client.chat.completions.create(
                 model=self._settings.OPENROUTER_MODEL,
                 messages=[
-                    {
-                        "role": "system",
-                        "content": self.DEFAULT_PROMPT
-                    },
                     {
                         "role": "user",
                         "content": [

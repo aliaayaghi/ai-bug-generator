@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     # AI settings (OpenRouter)
     OPENROUTER_API_KEY: str = ""
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_MODEL: str = "openrouter/free"
+    OPENROUTER_MODEL: str = "google/gemma-4-31b-it:free"
 
 
 @lru_cache
