@@ -39,6 +39,10 @@ function HomePage() {
   // Ref for file input
   const fileInputRef = useRef(null);
 
+  // Modal state for viewing saved report details
+  const [selectedReport, setSelectedReport] = useState(null);
+
+
   // Load reports on mount
   useEffect(() => {
     loadReports();
@@ -174,6 +178,26 @@ function HomePage() {
       await loadReports();
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  
+  
+
+  // Open modal to view report details
+  function handleViewReport(report) {
+    setSelectedReport(report);
+  }
+
+  // Close modal
+  function handleCloseModal() {
+    setSelectedReport(null);
+  }
+
+  // Handle click outside modal to close
+  function handleModalBackdropClick(e) {
+    if (e.target === e.currentTarget) {
+      handleCloseModal();
     }
   }
 
@@ -439,7 +463,11 @@ function HomePage() {
         ) : (
           <div className="reports-list">
             {reports.map((report) => (
-              <div key={report.id} className="report-item">
+              <div 
+                key={report.id} 
+                className="report-item"
+                onClick={() => handleViewReport(report)}
+              >
                 <div className="report-header">
                   <span className={`severity-badge severity-${report.severity}`}>
                     {report.severity}
@@ -447,7 +475,10 @@ function HomePage() {
                   <h3 className="report-title">{report.title}</h3>
                   <button
                     className="delete-button"
-                    onClick={() => handleDelete(report.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(report.id);
+                    }}
                     title="Delete report"
                   >
                     ×
@@ -468,6 +499,80 @@ function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Report Details Modal */}
+      {selectedReport && (
+        <div className="modal-overlay" onClick={handleModalBackdropClick}>
+          <div className="modal-content">
+            <button 
+              className="modal-close-button"
+              onClick={handleCloseModal}
+              aria-label="Close modal"
+            >
+              ×
+            </button>
+            
+            <div className="modal-header">
+              <span className={`severity-badge severity-${selectedReport.severity}`}>
+                {selectedReport.severity}
+              </span>
+              <h2 className="modal-title">{selectedReport.title}</h2>
+            </div>
+
+            <div className="modal-body">
+              <div className="modal-field">
+                <label>Summary</label>
+                <p>{selectedReport.summary || 'No summary provided'}</p>
+              </div>
+
+              <div className="modal-field">
+                <label>Expected Behavior</label>
+                <p>{selectedReport.expected_behavior || 'Not specified'}</p>
+              </div>
+
+              <div className="modal-field">
+                <label>Actual Behavior</label>
+                <p>{selectedReport.actual_behavior || 'Not specified'}</p>
+              </div>
+
+              {selectedReport.reproduction_steps && (
+                <div className="modal-field">
+                  <label>Reproduction Steps</label>
+                  <p>{selectedReport.reproduction_steps}</p>
+                </div>
+              )}
+
+              {selectedReport.page_url && (
+                <div className="modal-field">
+                  <label>Page URL</label>
+                  <p>{selectedReport.page_url}</p>
+                </div>
+              )}
+
+              {selectedReport.user_note && (
+                <div className="modal-field">
+                  <label>User Note</label>
+                  <p>{selectedReport.user_note}</p>
+                </div>
+              )}
+
+              {selectedReport.image_path && (
+                <div className="modal-field">
+                  <label>Screenshot</label>
+                  <div className="modal-screenshot">
+                    <img 
+                      src={selectedReport.image_path.startsWith('http') 
+                        ? selectedReport.image_path 
+                        : `/${selectedReport.image_path}`} 
+                      alt="Screenshot" 
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
