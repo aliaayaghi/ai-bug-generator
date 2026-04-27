@@ -12,6 +12,7 @@ function HomePage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState(null);
+  const [uploadError, setUploadError] = useState(null);
 
   // AI analysis state
   const [analyzing, setAnalyzing] = useState(false);
@@ -48,6 +49,7 @@ function HomePage() {
   // Delete confirmation modal state
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [reportToDelete, setReportToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
 
   // Load reports on mount
@@ -74,63 +76,86 @@ function HomePage() {
   }
 
   function handleFileSelect(e) {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedFile(file);
-      setUploadResult(null);
-      setAiFilled(false);
-      setAnalysisError(null);
-      setShowForm(true);
-      setShowPreview(false);
-      setIsEditing(false);
-      setUploading(true);
+  const file = e.target.files[0];
+  if (!file) return;
 
-      // Upload and analyze immediately
-      uploadFile(file)
-        .then((result) => {
-          setUploadResult(result);
-          setFormData((prev) => ({ ...prev, image_path: result.file_path }));
-          
-          // After upload succeeds, automatically analyze with AI
-          setAnalyzing(true);
-          return analyzeImage(
-            result.file_path,
-            formData.user_note,
-            formData.page_url
-          );
-        })
-        .then((analysis) => {
-          // Auto-fill form fields with AI analysis
-          setFormData((prev) => ({
-            ...prev,
-            title: analysis.title || prev.title,
-            summary: analysis.summary || prev.summary,
-            severity: analysis.severity || prev.severity,
-            reproduction_steps: analysis.reproduction_steps || prev.reproduction_steps,
-            expected_behavior: analysis.expected_behavior || prev.expected_behavior,
-            actual_behavior: analysis.actual_behavior || prev.actual_behavior,
-            suspected_area: analysis.suspected_area || prev.suspected_area,
-            confidence:
-  analysis.confidence !== null && analysis.confidence !== undefined
-    ? (analysis.confidence > 1 ? analysis.confidence / 100 : analysis.confidence)
-    : prev.confidence,
-          }));
-          setAiFilled(true);
-          // Show preview mode after AI analysis completes
-          setShowPreview(true);
-        })
-        .catch((err) => {
-          // Upload succeeded but analysis failed - show error but don't block
-          setAnalysisError(err.message);
-          // Still show form even if analysis failed
-          setShowForm(true);
-        })
-        .finally(() => {
-          setUploading(false);
-          setAnalyzing(false);
-        });
-    }
+  // Client-side validation
+  const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
+  const maxSize = 10 * 1024 * 1024; // 10MB
+
+  if (!validTypes.includes(file.type)) {
+    setError('Invalid file type. Please upload an image (PNG, JPG, GIF, WebP, or BMP).');
+    return;
   }
+
+  if (file.size > maxSize) {
+    setError('File too large. Maximum size is 10MB.');
+    return;
+  }
+
+  if (file.size === 0) {
+    setError('Empty file. Please upload a valid image.');
+    return;
+  }
+
+  let uploadCompleted = false;
+
+  setError(null);
+  setSelectedFile(file);
+  setUploadError(null);
+  setUploadResult(null);
+  setAiFilled(false);
+  setAnalysisError(null);
+  setShowForm(true);
+  setShowPreview(false);
+  setIsEditing(false);
+  setUploading(true);
+
+  uploadFile(file)
+    .then((result) => {
+      uploadCompleted = true;
+      setUploadResult(result);
+      setUploadError(null);
+      setFormData((prev) => ({ ...prev, image_path: result.file_path }));
+
+      setAnalyzing(true);
+      return analyzeImage(
+        result.file_path,
+        formData.user_note,
+        formData.page_url
+      );
+    })
+    .then((analysis) => {
+      setFormData((prev) => ({
+        ...prev,
+        title: analysis.title || prev.title,
+        summary: analysis.summary || prev.summary,
+        severity: analysis.severity || prev.severity,
+        reproduction_steps: analysis.reproduction_steps || prev.reproduction_steps,
+        expected_behavior: analysis.expected_behavior || prev.expected_behavior,
+        actual_behavior: analysis.actual_behavior || prev.actual_behavior,
+        suspected_area: analysis.suspected_area || prev.suspected_area,
+        confidence:
+          analysis.confidence !== null && analysis.confidence !== undefined
+            ? (analysis.confidence > 1 ? analysis.confidence / 100 : analysis.confidence)
+            : prev.confidence,
+      }));
+      setAiFilled(true);
+      setShowPreview(true);
+    })
+    .catch((err) => {
+      if (!uploadCompleted) {
+        setUploadError(err.message);
+      } else {
+        setAnalysisError(err.message);
+        setShowForm(true);
+      }
+    })
+    .finally(() => {
+      setUploading(false);
+      setAnalyzing(false);
+    });
+}
 
   // Handle click on upload area to trigger file input
   function handleUploadAreaClick() {
@@ -140,6 +165,7 @@ function HomePage() {
   // Reset to start over with new upload
   function handleStartOver() {
     setSelectedFile(null);
+    setUploadError(null);
     setUploadResult(null);
     setAiFilled(false);
     setAnalysisError(null);
@@ -193,14 +219,16 @@ function HomePage() {
 
   // Confirm delete from modal
   async function handleConfirmDelete() {
-    if (!reportToDelete) return;
+    if (!reportToDelete || deleting) return;
     try {
+      setDeleting(true);
       setError(null);
       await deleteReport(reportToDelete);
       await loadReports();
     } catch (err) {
       setError(err.message);
     } finally {
+      setDeleting(false);
       setShowDeleteModal(false);
       setReportToDelete(null);
     }
@@ -240,15 +268,16 @@ function HomePage() {
 
         {/* Upload Area - Main action on homepage */}
         <div 
-          className={`upload-area ${selectedFile ? 'has-file' : ''}`}
+          className={`upload-area ${selectedFile ? 'has-file' : ''} ${uploadError ? 'has-error' : ''}`}
           onClick={handleUploadAreaClick}
         >
           <input
             type="file"
             ref={fileInputRef}
-            accept="image/*"
+            accept="image/jpeg,image/png,image/gif,image/webp,image/bmp"
             onChange={handleFileSelect}
             className="file-input-hidden"
+            disabled={uploading || analyzing}
           />
           
           {!selectedFile ? (
@@ -256,22 +285,23 @@ function HomePage() {
             <>
               <div className="upload-icon">📷</div>
               <p className="upload-text">Click to upload a screenshot</p>
-              <p className="upload-hint">PNG, JPG, or GIF</p>
+              <p className="upload-hint">PNG, JPG, GIF, WebP, or BMP (max 10MB)</p>
             </>
           ) : (
             // File selected - show status
             <div className="file-status">
               <span className="file-name">{selectedFile.name}</span>
               {uploading && <span className="uploading-text">Uploading screenshot...</span>}
-              {uploadResult && !analyzing && !aiFilled && !analysisError && (
+              {uploadError && <span className="upload-error-text">{uploadError}</span>}
+              {uploadResult && !analyzing && !aiFilled && !analysisError && !uploadError && (
                 <span className="upload-success">✓ Upload complete</span>
               )}
               {analyzing && <span className="analyzing-text">Analyzing with AI...</span>}
               {aiFilled && !analyzing && (
                 <span className="ai-filled-text">✓ Analysis complete</span>
               )}
-              {analysisError && !analyzing && (
-                <span className="analysis-error-text">⚠ Analysis failed — you can still edit manually</span>
+              {analysisError && !analyzing && !uploadError && (
+                <span className="analysis-error-text">⚠ AI analysis failed — you can still edit manually</span>
               )}
             </div>
           )}
@@ -526,7 +556,10 @@ function HomePage() {
         {loading ? (
           <p className="loading-text">Loading reports...</p>
         ) : reports.length === 0 ? (
-          <p className="empty-text">No reports yet. Upload a screenshot to get started!</p>
+          <div className="empty-state">
+            <p className="empty-text">No reports yet.</p>
+            <p className="empty-hint">Upload a screenshot above to create your first bug report.</p>
+          </div>
         ) : (
           <div className="reports-list">
             {reports.map((report) => (
@@ -646,7 +679,12 @@ function HomePage() {
                         ? selectedReport.image_path 
                         : `/${selectedReport.image_path}`} 
                       alt="Screenshot" 
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling && (e.target.nextSibling.style.display = 'block');
+                      }}
                     />
+                    <p className="screenshot-fallback">Screenshot not available</p>
                   </div>
                 </div>
               )}
@@ -671,8 +709,9 @@ function HomePage() {
               <button
                 className="delete-modal-confirm"
                 onClick={handleConfirmDelete}
+                disabled={deleting}
               >
-                Delete
+                {deleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>

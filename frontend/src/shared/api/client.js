@@ -6,6 +6,20 @@
 const API_BASE = '/api';
 
 /**
+ * Extract user-friendly error message from response.
+ */
+function getErrorMessage(response, fallback) {
+  if (response.detail) {
+    // Handle FastAPI validation errors which come as array or string
+    if (Array.isArray(response.detail)) {
+      return response.detail.map(d => d.msg || d).join(', ');
+    }
+    return response.detail;
+  }
+  return fallback;
+}
+
+/**
  * Upload an image file to the backend.
  * @param {File} file - The image file to upload
  * @returns {Promise<Object>} Object with file_path, original_filename, content_type
@@ -21,7 +35,7 @@ export async function uploadFile(file) {
   
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Failed to upload file');
+    throw new Error(getErrorMessage(error, 'Upload failed. Please try again.'));
   }
   
   return response.json();
@@ -35,7 +49,7 @@ export async function fetchReports() {
   const response = await fetch(`${API_BASE}/reports`);
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Failed to fetch reports');
+    throw new Error(getErrorMessage(error, 'Failed to load reports. Please refresh.'));
   }
   return response.json();
 }
@@ -55,7 +69,7 @@ export async function createReport(reportData) {
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Failed to create report');
+    throw new Error(getErrorMessage(error, 'Failed to save report. Please try again.'));
   }
   return response.json();
 }
@@ -71,7 +85,7 @@ export async function deleteReport(reportId) {
   });
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Failed to delete report');
+    throw new Error(getErrorMessage(error, 'Failed to delete report. Please try again.'));
   }
 }
 
@@ -97,7 +111,8 @@ export async function analyzeImage(imagePath, userNote = '', pageUrl = '') {
   
   if (!response.ok) {
     const error = await response.json().catch(() => ({}));
-    throw new Error(error.detail || 'Failed to analyze image');
+    const message = getErrorMessage(error, 'AI analysis failed. You can still edit manually.');
+    throw new Error(message);
   }
   
   return response.json();
