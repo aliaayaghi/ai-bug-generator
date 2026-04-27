@@ -35,6 +35,8 @@ function HomePage() {
     user_note: '',
     page_url: '',
     reproduction_steps: '',
+    suspected_area: '',
+    confidence: null,
   });
 
   // Ref for file input
@@ -103,6 +105,11 @@ function HomePage() {
             reproduction_steps: analysis.reproduction_steps || prev.reproduction_steps,
             expected_behavior: analysis.expected_behavior || prev.expected_behavior,
             actual_behavior: analysis.actual_behavior || prev.actual_behavior,
+            suspected_area: analysis.suspected_area || prev.suspected_area,
+            confidence:
+  analysis.confidence !== null && analysis.confidence !== undefined
+    ? (analysis.confidence > 1 ? analysis.confidence / 100 : analysis.confidence)
+    : prev.confidence,
           }));
           setAiFilled(true);
           // Show preview mode after AI analysis completes
@@ -145,6 +152,8 @@ function HomePage() {
       user_note: '',
       page_url: '',
       reproduction_steps: '',
+      suspected_area: '',
+      confidence: null,
     });
   }
 
@@ -294,6 +303,20 @@ function HomePage() {
                 <p>{formData.reproduction_steps}</p>
               </div>
             )}
+            
+            {formData.suspected_area && (
+              <div className="preview-section">
+                <label>Suspected Area</label>
+                <p>{formData.suspected_area}</p>
+              </div>
+            )}
+            
+            {formData.confidence !== null && formData.confidence !== undefined && (
+              <div className="preview-section">
+                <label>AI Confidence</label>
+                <p>{Math.round(formData.confidence * 100)}%</p>
+              </div>
+            )}
           </div>
           
           <div className="form-actions">
@@ -412,6 +435,30 @@ function HomePage() {
                 rows={2}
               />
             </div>
+
+            <div className="form-group">
+              <label htmlFor="suspected_area">Suspected Area</label>
+              <input
+                type="text"
+                id="suspected_area"
+                name="suspected_area"
+                value={formData.suspected_area}
+                onChange={handleInputChange}
+                placeholder="Component or area causing the issue"
+              />
+            </div>
+
+            {formData.confidence !== null && formData.confidence !== undefined && (
+              <div className="form-group">
+                <label>AI Confidence</label>
+                <input
+                  type="text"
+                  value={`${Math.round(formData.confidence * 100)}%`}
+                  disabled
+                  className="confidence-display"
+                />
+              </div>
+            )}
 
             <div className="form-group">
               <label htmlFor="page_url">Page URL</label>
@@ -544,6 +591,20 @@ function HomePage() {
                 <div className="modal-field">
                   <label>Reproduction Steps</label>
                   <p>{selectedReport.reproduction_steps}</p>
+                </div>
+              )}
+
+              {selectedReport.suspected_area && (
+                <div className="modal-field">
+                  <label>Suspected Area</label>
+                  <p>{selectedReport.suspected_area}</p>
+                </div>
+              )}
+
+              {selectedReport.confidence !== null && selectedReport.confidence !== undefined && (
+                <div className="modal-field">
+                  <label>AI Confidence</label>
+                  <p>{Math.round(selectedReport.confidence * 100)}%</p>
                 </div>
               )}
 
