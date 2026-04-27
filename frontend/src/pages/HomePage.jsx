@@ -45,6 +45,10 @@ function HomePage() {
   // Modal state for viewing saved report details
   const [selectedReport, setSelectedReport] = useState(null);
 
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState(null);
+
 
   // Load reports on mount
   useEffect(() => {
@@ -181,21 +185,32 @@ function HomePage() {
     }
   }
 
-  async function handleDelete(reportId) {
-    if (!confirm('Are you sure you want to delete this report?')) {
-      return;
-    }
+  // Open delete confirmation modal
+  function handleDeleteClick(reportId) {
+    setReportToDelete(reportId);
+    setShowDeleteModal(true);
+  }
+
+  // Confirm delete from modal
+  async function handleConfirmDelete() {
+    if (!reportToDelete) return;
     try {
       setError(null);
-      await deleteReport(reportId);
+      await deleteReport(reportToDelete);
       await loadReports();
     } catch (err) {
       setError(err.message);
+    } finally {
+      setShowDeleteModal(false);
+      setReportToDelete(null);
     }
   }
 
-  
-  
+  // Close delete modal without deleting
+  function handleCancelDelete() {
+    setShowDeleteModal(false);
+    setReportToDelete(null);
+  }
 
   // Open modal to view report details
   function handleViewReport(report) {
@@ -529,7 +544,7 @@ function HomePage() {
                     className="delete-button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDelete(report.id);
+                      handleDeleteClick(report.id);
                     }}
                     title="Delete report"
                   >
@@ -635,6 +650,30 @@ function HomePage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={handleCancelDelete}>
+          <div className="delete-modal-content" onClick={(e) => e.stopPropagation()}>
+            <h2 className="delete-modal-title">Delete report?</h2>
+            <p className="delete-modal-warning">This action cannot be undone.</p>
+            <div className="delete-modal-actions">
+              <button
+                className="delete-modal-cancel"
+                onClick={handleCancelDelete}
+              >
+                Cancel
+              </button>
+              <button
+                className="delete-modal-confirm"
+                onClick={handleConfirmDelete}
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
