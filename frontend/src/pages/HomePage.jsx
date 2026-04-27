@@ -6,6 +6,7 @@ function HomePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // File upload state - starts with upload as main action
   const [selectedFile, setSelectedFile] = useState(null);
@@ -158,9 +159,12 @@ function HomePage() {
       setSubmitting(true);
       setError(null);
       await createReport(formData);
+      setSaveSuccess(true);
       // Reset to initial state after successful save
       handleStartOver();
       await loadReports();
+      // Clear success message after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -207,7 +211,7 @@ function HomePage() {
       <div className="card">
         <h1 className="title">Bug Report AI</h1>
         <p className="description">
-          Upload a screenshot and let AI generate a detailed bug report for you.
+          Upload a screenshot and AI will analyze it to create a detailed bug report.
         </p>
 
         {/* Upload Area - Main action on homepage */}
@@ -234,30 +238,31 @@ function HomePage() {
             // File selected - show status
             <div className="file-status">
               <span className="file-name">{selectedFile.name}</span>
-              {uploading && <span className="uploading-text">Uploading...</span>}
-              {uploadResult && !analyzing && (
-                <span className="upload-success">✓ Uploaded</span>
+              {uploading && <span className="uploading-text">Uploading screenshot...</span>}
+              {uploadResult && !analyzing && !aiFilled && !analysisError && (
+                <span className="upload-success">✓ Upload complete</span>
               )}
               {analyzing && <span className="analyzing-text">Analyzing with AI...</span>}
               {aiFilled && !analyzing && (
-                <span className="ai-filled-text">✓ Report generated</span>
+                <span className="ai-filled-text">✓ Analysis complete</span>
               )}
               {analysisError && !analyzing && (
-                <span className="analysis-error-text">⚠ {analysisError}</span>
+                <span className="analysis-error-text">⚠ Analysis failed — you can still edit manually</span>
               )}
             </div>
           )}
         </div>
 
         {error && <div className="error-message">{error}</div>}
+        {saveSuccess && <div className="success-message">Report saved successfully!</div>}
       </div>
 
       {/* AI Preview Card - Read-only report preview */}
       {showPreview && !isEditing && (
         <div className="card">
-          <h2 className="section-title">Generated Report Preview</h2>
+          <h2 className="section-title">Generated Report</h2>
           <p className="form-description">
-            Review the AI-generated report below. You can save it as-is or edit it first.
+            Review the AI-generated report below. You can edit it before saving.
           </p>
           
           <div className="preview-card">
