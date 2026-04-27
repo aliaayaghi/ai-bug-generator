@@ -32,11 +32,11 @@ def create_app() -> FastAPI:
     app.include_router(api_router, prefix=settings.API_PREFIX)
 
     # Serve uploaded files as static files
-    uploads_dir = Path(__file__).parent.parent.parent / "uploads"
-    if uploads_dir.exists():
-        app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
-
+    # Serve uploaded files as static files
+    uploads_dir = Path(__file__).parent.parent / "uploads"
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
     return app
 
-
+ 
 app = create_app()
