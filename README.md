@@ -26,6 +26,19 @@ Bug Report AI is a full-stack web app that turns a screenshot into a structured 
 
 ---
 
+## Screenshots
+
+### Homepage
+<img src="screenshots/homepage.png" width="700" />
+
+### Saved Reports
+<img src="screenshots/reports.png" width="700" />
+
+### Report Modal
+<img src="screenshots/report-modal.png" width="700" />
+
+---
+
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
