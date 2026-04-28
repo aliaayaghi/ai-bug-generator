@@ -1,4 +1,4 @@
-# 🐛 Bug Report AI
+#  Bug Report AI
 
 > Turn a screenshot into a structured bug report — instantly.
 
@@ -14,15 +14,15 @@ Bug Report AI is a full-stack web app that turns a screenshot into a structured 
 
 ## ✨ Features
 
-- 📤 **Upload** a screenshot from the homepage
-- 🤖 **AI-powered** screenshot analysis
-- 📋 **Auto-generated** bug report preview
-- ✏️ **Edit** the generated report before saving
-- 💾 **Save reports** to a SQLite database
-- 🗂️ **View** saved reports in a clean modal
-- 🖼️ **Preview** the uploaded screenshot inside the saved report modal
-- 🗑️ **Delete** reports with a custom in-app confirmation modal
-- ✅ **Friendly validation** and error handling throughout
+-  **Upload** a screenshot from the homepage
+-  **AI-powered** screenshot analysis
+-  **Auto-generated** bug report preview
+-  **Edit** the generated report before saving
+-  **Save reports** to a SQLite database
+-  **View** saved reports in a clean modal
+-  **Preview** the uploaded screenshot inside the saved report modal
+-  **Delete** reports with a custom in-app confirmation modal
+-  **Friendly validation** and error handling throughout
 
 ---
 
